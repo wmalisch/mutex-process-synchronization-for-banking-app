@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <ctype.h>
 
 #include "io.h"
 
@@ -25,11 +27,10 @@ counts num_accounts_clients(FILE *fp, counts *inp)
 
 int num_c(char * line){
     int num = 0;
-    char index = line[0];
+    char index = line[num];
     while(index != '\n'){
         num++;
         index = line[num];
-
     }
     return num;
 }
@@ -40,12 +41,11 @@ int read_input_file(char *filename, input_data *input){
         perror(filename);
         exit(1);
     }
-
     // Get number of accounts and clients, store in input data
     counts inp;
     inp = num_accounts_clients(fp, &inp);
     int * bankAccounts = malloc(sizeof(int) * inp.a);
-    char ** clients = malloc(sizeof(char *) * inp.c);
+    char ** clients = malloc(sizeof(char *) * (inp.c + 1));
 
     // Get account balances, and store the balance in its respective account location
     fp = fopen(filename, "r");
@@ -67,14 +67,19 @@ int read_input_file(char *filename, input_data *input){
 	const char delim[2] = " ";
 	ssize_t nread;
     int var;
+    char ch = '/';
     for(int i = 0; i < inp.c; i++){
         char *buffer = NULL;
         nread = getline(&buffer, &len, fp);
-        // This is making the strings longer than then should be.
-        // Maybe check this later if running into errors
         var = num_c(buffer);
-        clients[i] = malloc(sizeof(char) * var);
-        clients[i] = buffer;
+        
+        // Get rid of trailing characters
+        char *buffer_wo_nl =  malloc(sizeof(char) * (var-1));
+        for(int i = 0; i < (var - 1); i++){
+            buffer_wo_nl[i] = buffer[i];
+        }
+        clients[i] = malloc(sizeof(char) * (var-1));
+        clients[i] = buffer_wo_nl;
     }
 
     // Done with files so close it
@@ -85,6 +90,5 @@ int read_input_file(char *filename, input_data *input){
     input->nClients = inp.c;
     input->bankAccounts = bankAccounts;
     input->clients = clients;
-
     return 0;
 }
